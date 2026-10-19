@@ -1,0 +1,7 @@
+# Power BI Desktop
+**/.pbi/
+*.pbix
+*.pbi.tmp
+# Python
+__pycache__/
+*.pyc

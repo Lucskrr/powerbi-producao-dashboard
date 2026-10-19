@@ -1,0 +1,49 @@
+table fato_fila_op
+	lineageTag: f8bc64bc-194b-5f45-a8cd-269011b815dd
+
+	column nr_op
+		dataType: string
+		summarizeBy: none
+		sourceColumn: nr_op
+		lineageTag: a12d23a1-8c0a-519c-bda2-14f80a865b7f
+
+	column cd_setor
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: cd_setor
+		lineageTag: bcbd0c80-d483-54bb-992b-88138a9cd0c1
+
+	column cd_familia
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: cd_familia
+		lineageTag: 151515f7-0d5d-5200-aadd-2dd6fb6dfd53
+
+	column pecas
+		dataType: int64
+		summarizeBy: sum
+		sourceColumn: pecas
+		lineageTag: 60a756ed-dc7d-50c4-ac8f-e8af61ae847e
+
+	column valor_servico_restante
+		dataType: double
+		summarizeBy: sum
+		sourceColumn: valor_servico_restante
+		lineageTag: 15d495a8-6946-576c-aee7-81a2f14e019a
+
+	column data_ultima_movimentacao
+		dataType: dateTime
+		formatString: dd/mm/yyyy
+		summarizeBy: none
+		sourceColumn: data_ultima_movimentacao
+		lineageTag: d1337b94-5e9b-52e9-b3a1-1dcb7e6d8477
+
+	partition fato_fila_op = m
+		mode: import
+		source =
+				let
+				    Fonte = Csv.Document(File.Contents(PastaDados & "\fato_fila_op.csv"), [Delimiter = ",", Encoding = 65001, QuoteStyle = QuoteStyle.Csv]),
+				    Cabecalho = Table.PromoteHeaders(Fonte, [PromoteAllScalars = true]),
+				    Tipos = Table.TransformColumnTypes(Cabecalho, {{"nr_op", type text}, {"cd_setor", Int64.Type}, {"cd_familia", Int64.Type}, {"pecas", Int64.Type}, {"valor_servico_restante", type number}, {"data_ultima_movimentacao", type date}}, "en-US")
+				in
+				    Tipos

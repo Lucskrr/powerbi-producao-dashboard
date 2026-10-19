@@ -1,0 +1,3 @@
+/// Pasta onde estão os CSVs sintéticos. Ajuste para o caminho da sua máquina (Transformar dados > Gerenciar parâmetros).
+expression PastaDados = "C:\caminho\para\powerbi-producao-dashboard\dados" meta [IsParameterQuery = true, Type = "Text", IsParameterQueryRequired = true]
+	lineageTag: 6f1d3a52-0a7e-4c1b-9d55-1a2b3c4d5e01

@@ -1,0 +1,37 @@
+table fato_custo_setor_dia
+	lineageTag: a27f2ca2-0798-54df-93e8-a40cfe4ac582
+
+	column data
+		dataType: dateTime
+		formatString: dd/mm/yyyy
+		summarizeBy: none
+		sourceColumn: data
+		lineageTag: a3951b4e-9dbf-5c32-9f29-821e18cf0a82
+
+	column cd_setor
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: cd_setor
+		lineageTag: 81ac915d-45a1-5b76-a54e-543fd4432d38
+
+	column custo_salarios_dia
+		dataType: double
+		summarizeBy: sum
+		sourceColumn: custo_salarios_dia
+		lineageTag: e816c9af-f480-54ae-8060-2b4c235b9e07
+
+	column premio_estimado_dia
+		dataType: double
+		summarizeBy: sum
+		sourceColumn: premio_estimado_dia
+		lineageTag: 34cd6ab8-abed-59a7-89e9-053d5b7ed0a3
+
+	partition fato_custo_setor_dia = m
+		mode: import
+		source =
+				let
+				    Fonte = Csv.Document(File.Contents(PastaDados & "\fato_custo_setor_dia.csv"), [Delimiter = ",", Encoding = 65001, QuoteStyle = QuoteStyle.Csv]),
+				    Cabecalho = Table.PromoteHeaders(Fonte, [PromoteAllScalars = true]),
+				    Tipos = Table.TransformColumnTypes(Cabecalho, {{"data", type date}, {"cd_setor", Int64.Type}, {"custo_salarios_dia", type number}, {"premio_estimado_dia", type number}}, "en-US")
+				in
+				    Tipos

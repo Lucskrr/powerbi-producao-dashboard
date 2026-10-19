@@ -1,0 +1,31 @@
+table dim_setor
+	lineageTag: 3beacc8d-5e1d-5590-ad2f-f862119c7cea
+
+	column cd_setor
+		dataType: int64
+		isKey
+		summarizeBy: none
+		sourceColumn: cd_setor
+		lineageTag: cf3ef347-fc5d-516e-b9a8-bc01ccd4272b
+
+	column setor
+		dataType: string
+		summarizeBy: none
+		sourceColumn: setor
+		lineageTag: a31560d3-d062-53a5-b2cb-dd67b27bc9c5
+
+	column ordem_fluxo
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: ordem_fluxo
+		lineageTag: 0264175a-a8a2-5d76-b8d6-9e4b0d53376e
+
+	partition dim_setor = m
+		mode: import
+		source =
+				let
+				    Fonte = Csv.Document(File.Contents(PastaDados & "\dim_setor.csv"), [Delimiter = ",", Encoding = 65001, QuoteStyle = QuoteStyle.Csv]),
+				    Cabecalho = Table.PromoteHeaders(Fonte, [PromoteAllScalars = true]),
+				    Tipos = Table.TransformColumnTypes(Cabecalho, {{"cd_setor", Int64.Type}, {"setor", type text}, {"ordem_fluxo", Int64.Type}}, "en-US")
+				in
+				    Tipos

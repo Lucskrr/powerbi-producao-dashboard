@@ -1,0 +1,55 @@
+table fato_producao
+	lineageTag: 573b6086-e1d6-565f-942a-e4eaa45affca
+
+	column id_movimentacao
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: id_movimentacao
+		lineageTag: 30aec41a-7804-541e-b384-e1c366d2c4fd
+
+	column data
+		dataType: dateTime
+		formatString: dd/mm/yyyy
+		summarizeBy: none
+		sourceColumn: data
+		lineageTag: 385a0280-0640-5351-b10b-fed619c53dc6
+
+	column cd_setor
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: cd_setor
+		lineageTag: 6d7ba093-3688-5a47-9c50-7f671c16033e
+
+	column nr_op
+		dataType: string
+		summarizeBy: none
+		sourceColumn: nr_op
+		lineageTag: 99bf416d-4d31-557c-b7dd-5ac6cde8e533
+
+	column cd_familia
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: cd_familia
+		lineageTag: 34b23ecd-e1f6-5eea-8c0c-3a0f40becf61
+
+	column pecas
+		dataType: int64
+		summarizeBy: sum
+		sourceColumn: pecas
+		lineageTag: 109b5b12-6f57-5577-bb37-5323aa7495b4
+
+	column valor_servico
+		dataType: double
+		summarizeBy: sum
+		sourceColumn: valor_servico
+		lineageTag: 6824e77f-f81d-5808-aeb9-414b6878ba9c
+
+	partition fato_producao = m
+		mode: import
+		source =
+				let
+				    Fonte = Csv.Document(File.Contents(PastaDados & "\fato_producao.csv"), [Delimiter = ",", Encoding = 65001, QuoteStyle = QuoteStyle.Csv]),
+				    Cabecalho = Table.PromoteHeaders(Fonte, [PromoteAllScalars = true]),
+				    Tipos = Table.TransformColumnTypes(Cabecalho, {{"id_movimentacao", Int64.Type}, {"data", type date}, {"cd_setor", Int64.Type}, {"nr_op", type text}, {"cd_familia", Int64.Type}, {"pecas", Int64.Type}, {"valor_servico", type number}}, "en-US")
+				in
+				    Tipos

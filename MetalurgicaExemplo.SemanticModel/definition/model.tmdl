@@ -1,0 +1,17 @@
+model Model
+	culture: pt-BR
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	discourageImplicitMeasures
+
+ref table _Medidas
+ref table dim_calendario
+ref table dim_setor
+ref table dim_familia_produto
+ref table dim_faixa_premio
+ref table fato_producao
+ref table fato_custo_setor_dia
+ref table fato_fila_op
+
+ref expression PastaDados
+
+ref culture pt-BR

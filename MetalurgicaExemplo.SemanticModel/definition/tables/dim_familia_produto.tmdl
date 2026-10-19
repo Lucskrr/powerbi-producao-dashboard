@@ -1,0 +1,31 @@
+table dim_familia_produto
+	lineageTag: c2bccd53-7920-506a-ae47-a69f66f0d9fa
+
+	column cd_familia
+		dataType: int64
+		isKey
+		summarizeBy: none
+		sourceColumn: cd_familia
+		lineageTag: d29ed2d7-1564-5bbf-bd9b-ad6b3ae4f4d3
+
+	column familia
+		dataType: string
+		summarizeBy: none
+		sourceColumn: familia
+		lineageTag: ba9642ba-5184-51c3-bfcc-b7bdf7818a73
+
+	column categoria
+		dataType: string
+		summarizeBy: none
+		sourceColumn: categoria
+		lineageTag: a587d5f4-9fc4-53a6-96c8-d7e1a2fa5f27
+
+	partition dim_familia_produto = m
+		mode: import
+		source =
+				let
+				    Fonte = Csv.Document(File.Contents(PastaDados & "\dim_familia_produto.csv"), [Delimiter = ",", Encoding = 65001, QuoteStyle = QuoteStyle.Csv]),
+				    Cabecalho = Table.PromoteHeaders(Fonte, [PromoteAllScalars = true]),
+				    Tipos = Table.TransformColumnTypes(Cabecalho, {{"cd_familia", Int64.Type}, {"familia", type text}, {"categoria", type text}}, "en-US")
+				in
+				    Tipos

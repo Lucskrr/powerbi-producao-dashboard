@@ -1,0 +1,58 @@
+table dim_calendario
+	lineageTag: e50e175f-a0ad-5227-aa52-deb209a725d4
+	dataCategory: Time
+
+	column data
+		dataType: dateTime
+		isKey
+		formatString: dd/mm/yyyy
+		summarizeBy: none
+		sourceColumn: data
+		lineageTag: 2eb9b38d-8d43-5d5f-b65f-54fafa4b3262
+
+	column ano
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: ano
+		lineageTag: 3b57102c-25d1-5092-82f6-425a5b9df340
+
+	column mes_num
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: mes_num
+		lineageTag: 5db010ae-49c4-528e-8eb3-77ef415f8730
+
+	column mes_ano
+		dataType: string
+		sortByColumn: mes_ano_ordem
+		summarizeBy: none
+		sourceColumn: mes_ano
+		lineageTag: a59a44dc-d872-568b-a38b-666b6df5b4aa
+
+	column mes_ano_ordem
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: mes_ano_ordem
+		lineageTag: 94495212-6d74-562d-b6a7-3db04b880ab7
+
+	column dia_semana
+		dataType: string
+		summarizeBy: none
+		sourceColumn: dia_semana
+		lineageTag: 80e20ea5-d84f-5ff5-a1fc-fac66fc55cd8
+
+	column dia_util
+		dataType: int64
+		summarizeBy: sum
+		sourceColumn: dia_util
+		lineageTag: 523d6830-e44d-5f53-b34d-ddff5e174a79
+
+	partition dim_calendario = m
+		mode: import
+		source =
+				let
+				    Fonte = Csv.Document(File.Contents(PastaDados & "\dim_calendario.csv"), [Delimiter = ",", Encoding = 65001, QuoteStyle = QuoteStyle.Csv]),
+				    Cabecalho = Table.PromoteHeaders(Fonte, [PromoteAllScalars = true]),
+				    Tipos = Table.TransformColumnTypes(Cabecalho, {{"data", type date}, {"ano", Int64.Type}, {"mes_num", Int64.Type}, {"mes_ano", type text}, {"mes_ano_ordem", Int64.Type}, {"dia_semana", type text}, {"dia_util", Int64.Type}}, "en-US")
+				in
+				    Tipos

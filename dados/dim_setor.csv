@@ -1,0 +1,7 @@
+cd_setor,setor,ordem_fluxo
+1,Corte a Laser,1
+2,Dobra,2
+3,Usinagem,3
+4,Soldagem,4
+5,Pintura,5
+6,Montagem,6

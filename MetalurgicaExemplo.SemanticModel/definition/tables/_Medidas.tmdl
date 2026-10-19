@@ -1,0 +1,377 @@
+table _Medidas
+	lineageTag: 0b8e5c0e-3d67-4a52-8d34-4a9d1c7e2f10
+
+	/// Último dia com produção. No mock é fixa; num cenário real seria TODAY().
+	measure 'Data Referencia' = CALCULATE ( MAX ( fato_producao[data] ), REMOVEFILTERS () )
+		formatString: dd/mm/yyyy
+		displayFolder: Cabeçalho
+		lineageTag: 5a000001-0000-4000-8000-000000000001
+
+	/// Texto para um cartão no cabeçalho do relatório.
+	measure 'Ultima Atualizacao' = "Dados até " & FORMAT ( [Data Referencia], "dd/mm/yyyy" )
+		displayFolder: Cabeçalho
+		lineageTag: 5a000001-0000-4000-8000-000000000002
+
+	/// Soma do valor do serviço das movimentações de OP no contexto de filtro.
+	measure 'Faturamento Produzido' = SUM ( fato_producao[valor_servico] )
+		formatString: "R$" #,0.00;-"R$" #,0.00;"R$" #,0.00
+		displayFolder: Base
+		lineageTag: 5a000001-0000-4000-8000-000000000003
+
+	measure 'Pecas Produzidas' = SUM ( fato_producao[pecas] )
+		formatString: #,0
+		displayFolder: Base
+		lineageTag: 5a000001-0000-4000-8000-000000000004
+
+	measure 'OPs Movimentadas' = DISTINCTCOUNT ( fato_producao[nr_op] )
+		formatString: #,0
+		displayFolder: Base
+		lineageTag: 5a000001-0000-4000-8000-000000000005
+
+	/// Salários + encargos do período, somando o custo vigente em cada dia (usa o histórico: reajustes não alteram dias passados).
+	measure 'Custo Salarios Periodo' = SUM ( fato_custo_setor_dia[custo_salarios_dia] )
+		formatString: "R$" #,0.00;-"R$" #,0.00;"R$" #,0.00
+		displayFolder: Composição da Meta
+		lineageTag: 5a000001-0000-4000-8000-000000000006
+
+	/// Prêmio pago com 100% de eficiência, somado dia a dia.
+	measure 'Premio Estimado Periodo' = SUM ( fato_custo_setor_dia[premio_estimado_dia] )
+		formatString: "R$" #,0.00;-"R$" #,0.00;"R$" #,0.00
+		displayFolder: Composição da Meta
+		lineageTag: 5a000001-0000-4000-8000-000000000007
+
+	/// Meta de faturamento do período = custo do setor + prêmio estimado.
+	measure 'Meta Custo Periodo' = [Custo Salarios Periodo] + [Premio Estimado Periodo]
+		formatString: "R$" #,0.00;-"R$" #,0.00;"R$" #,0.00
+		displayFolder: Composição da Meta
+		lineageTag: 5a000001-0000-4000-8000-000000000008
+
+	measure '% Premio na Meta' = DIVIDE ( [Premio Estimado Periodo], [Meta Custo Periodo] )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Composição da Meta
+		lineageTag: 5a000001-0000-4000-8000-000000000009
+
+	/// Eficiência = faturamento produzido / meta do período filtrado.
+	measure '% Atingimento' = DIVIDE ( [Faturamento Produzido], [Meta Custo Periodo] )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Base
+		lineageTag: 5a000001-0000-4000-8000-000000000010
+
+	/// Primeiro dia da competência (mês) da data de referência.
+	measure 'Inicio Ciclo' = DATE ( YEAR ( [Data Referencia] ), MONTH ( [Data Referencia] ), 1 )
+		formatString: dd/mm/yyyy
+		displayFolder: Acompanhamento da Meta\Calendário
+		lineageTag: 5a000001-0000-4000-8000-000000000011
+
+	measure 'Fim Ciclo' = EOMONTH ( [Data Referencia], 0 )
+		formatString: dd/mm/yyyy
+		displayFolder: Acompanhamento da Meta\Calendário
+		lineageTag: 5a000001-0000-4000-8000-000000000012
+
+	/// Dias úteis da competência, sem fins de semana e feriados.
+	measure 'Dias Uteis Ciclo' =
+			CALCULATE (
+			    SUM ( dim_calendario[dia_util] ),
+			    REMOVEFILTERS ( dim_calendario ),
+			    dim_calendario[data] >= [Inicio Ciclo],
+			    dim_calendario[data] <= [Fim Ciclo]
+			)
+		formatString: 0
+		displayFolder: Acompanhamento da Meta\Calendário
+		lineageTag: 5a000001-0000-4000-8000-000000000013
+
+	/// Dias úteis da competência antes da data de referência.
+	measure 'Dias Uteis Decorridos' =
+			CALCULATE (
+			    SUM ( dim_calendario[dia_util] ),
+			    REMOVEFILTERS ( dim_calendario ),
+			    dim_calendario[data] >= [Inicio Ciclo],
+			    dim_calendario[data] < [Data Referencia]
+			)
+		formatString: 0
+		displayFolder: Acompanhamento da Meta\Calendário
+		lineageTag: 5a000001-0000-4000-8000-000000000014
+
+	/// Dias úteis que faltam na competência, contando o dia de referência.
+	measure 'Dias Uteis Restantes' = [Dias Uteis Ciclo] - [Dias Uteis Decorridos]
+		formatString: 0
+		displayFolder: Acompanhamento da Meta\Calendário
+		lineageTag: 5a000001-0000-4000-8000-000000000015
+
+	/// Meta da competência inteira (histórico nos dias passados, custo vigente nos dias futuros).
+	measure 'Meta do Ciclo' =
+			CALCULATE (
+			    [Meta Custo Periodo],
+			    REMOVEFILTERS ( dim_calendario ),
+			    dim_calendario[data] >= [Inicio Ciclo],
+			    dim_calendario[data] <= [Fim Ciclo]
+			)
+		formatString: "R$" #,0.00;-"R$" #,0.00;"R$" #,0.00
+		displayFolder: Acompanhamento da Meta
+		lineageTag: 5a000001-0000-4000-8000-000000000016
+
+	/// Faturamento da competência até a data de referência (inclusive).
+	measure 'Faturamento Ciclo' =
+			CALCULATE (
+			    [Faturamento Produzido],
+			    REMOVEFILTERS ( dim_calendario ),
+			    dim_calendario[data] >= [Inicio Ciclo],
+			    dim_calendario[data] <= [Data Referencia]
+			)
+		formatString: "R$" #,0.00;-"R$" #,0.00;"R$" #,0.00
+		displayFolder: Acompanhamento da Meta
+		lineageTag: 5a000001-0000-4000-8000-000000000017
+
+	/// Faturamento nos dias já encerrados da competência (base do ritmo).
+	measure 'Faturamento Ate Ontem' =
+			CALCULATE (
+			    [Faturamento Produzido],
+			    REMOVEFILTERS ( dim_calendario ),
+			    dim_calendario[data] >= [Inicio Ciclo],
+			    dim_calendario[data] < [Data Referencia]
+			)
+		formatString: "R$" #,0.00;-"R$" #,0.00;"R$" #,0.00
+		displayFolder: Acompanhamento da Meta
+		lineageTag: 5a000001-0000-4000-8000-000000000018
+
+	/// Faturamento da competência até agora / meta da competência inteira.
+	measure '% Atual do Ciclo' = DIVIDE ( [Faturamento Ciclo], [Meta do Ciclo] )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Acompanhamento da Meta
+		lineageTag: 5a000001-0000-4000-8000-000000000019
+
+	/// Faturamento médio por dia útil já encerrado.
+	measure 'Ritmo Diario' = DIVIDE ( [Faturamento Ate Ontem], [Dias Uteis Decorridos] )
+		formatString: "R$" #,0.00;-"R$" #,0.00;"R$" #,0.00
+		displayFolder: Acompanhamento da Meta
+		lineageTag: 5a000001-0000-4000-8000-000000000020
+
+	/// Quanto falta faturar para bater 100% da meta (0 se já bateu).
+	measure 'Falta para Meta' = MAX ( 0, [Meta do Ciclo] - [Faturamento Ciclo] )
+		formatString: "R$" #,0.00;-"R$" #,0.00;"R$" #,0.00
+		displayFolder: Acompanhamento da Meta
+		lineageTag: 5a000001-0000-4000-8000-000000000021
+
+	/// Faturamento necessário por dia útil restante para bater a meta.
+	measure 'Necessario por Dia' = DIVIDE ( [Falta para Meta], [Dias Uteis Restantes] )
+		formatString: "R$" #,0.00;-"R$" #,0.00;"R$" #,0.00
+		displayFolder: Acompanhamento da Meta
+		lineageTag: 5a000001-0000-4000-8000-000000000022
+
+	/// Necessário por dia / ritmo atual. Até 1x = no ritmo; 2x = precisa dobrar a produção.
+	measure 'Esforco x Ritmo' = DIVIDE ( [Necessario por Dia], [Ritmo Diario] )
+		formatString: 0.0"x"
+		displayFolder: Acompanhamento da Meta
+		lineageTag: 5a000001-0000-4000-8000-000000000023
+
+	/// Faturamento previsto no fim da competência mantendo o ritmo atual.
+	measure 'Projecao Faturamento' = [Faturamento Ate Ontem] + [Ritmo Diario] * [Dias Uteis Restantes]
+		formatString: "R$" #,0.00;-"R$" #,0.00;"R$" #,0.00
+		displayFolder: Acompanhamento da Meta
+		lineageTag: 5a000001-0000-4000-8000-000000000024
+
+	/// Eficiência prevista no fim da competência mantendo o ritmo atual.
+	measure '% Projetado' = DIVIDE ( [Projecao Faturamento], [Meta do Ciclo] )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Acompanhamento da Meta
+		lineageTag: 5a000001-0000-4000-8000-000000000025
+
+	/// Meta batida / No ritmo / Acelerar (até 1,5x o ritmo) / Meta improvável / Não atingida / Sem produção.
+	measure 'Status' =
+			VAR Falta = [Falta para Meta]
+			VAR Esforco = [Esforco x Ritmo]
+			RETURN
+			    SWITCH (
+			        TRUE (),
+			        ISBLANK ( [Meta do Ciclo] ), BLANK (),
+			        Falta = 0, "Meta batida",
+			        [Dias Uteis Restantes] <= 0, "Não atingida",
+			        [Dias Uteis Decorridos] > 0 && [Faturamento Ate Ontem] = 0, "Sem produção",
+			        Esforco <= 1, "No ritmo",
+			        Esforco <= 1.5, "Acelerar",
+			        "Meta improvável"
+			    )
+		displayFolder: Acompanhamento da Meta
+		lineageTag: 5a000001-0000-4000-8000-000000000026
+
+	/// Cor para formatação condicional (Valor do campo) da coluna Status.
+	measure 'Cor Status' =
+			SWITCH (
+			    [Status],
+			    "Meta batida", "#2E7D32",
+			    "No ritmo", "#2E7D32",
+			    "Acelerar", "#F9A825",
+			    "Meta improvável", "#C62828",
+			    "Não atingida", "#C62828",
+			    "#9E9E9E"
+			)
+		displayFolder: Acompanhamento da Meta
+		lineageTag: 5a000001-0000-4000-8000-000000000027
+
+	measure 'Valor Medio por Peca' = DIVIDE ( [Faturamento Produzido], [Pecas Produzidas] )
+		formatString: "R$" #,0.00;-"R$" #,0.00;"R$" #,0.00
+		displayFolder: Acompanhamento da Meta
+		lineageTag: 5a000001-0000-4000-8000-000000000028
+
+	/// Peças que faltam produzir para bater a meta, ao valor por peça típico do setor.
+	measure 'Pecas Faltantes' = DIVIDE ( [Falta para Meta], [Valor Medio por Peca Tipico] )
+		formatString: #,0
+		displayFolder: Acompanhamento da Meta
+		lineageTag: 5a000001-0000-4000-8000-000000000029
+
+	/// % da diária de prêmio correspondente à eficiência atual da competência.
+	measure 'Faixa Premio Atual' =
+			VAR Eficiencia = [% Atual do Ciclo]
+			RETURN
+			    CALCULATE (
+			        MAX ( dim_faixa_premio[pct_diaria_premio] ),
+			        FILTER (
+			            ALL ( dim_faixa_premio ),
+			            Eficiencia >= dim_faixa_premio[eficiencia_min]
+			                && Eficiencia < dim_faixa_premio[eficiencia_max]
+			        )
+			    )
+		formatString: 0%;-0%;0%
+		displayFolder: Prêmio
+		lineageTag: 5a000001-0000-4000-8000-000000000030
+
+	/// % da diária de prêmio que o setor atinge no fim da competência mantendo o ritmo.
+	measure 'Faixa Premio Projetada' =
+			VAR Eficiencia = [% Projetado]
+			RETURN
+			    CALCULATE (
+			        MAX ( dim_faixa_premio[pct_diaria_premio] ),
+			        FILTER (
+			            ALL ( dim_faixa_premio ),
+			            Eficiencia >= dim_faixa_premio[eficiencia_min]
+			                && Eficiencia < dim_faixa_premio[eficiencia_max]
+			        )
+			    )
+		formatString: 0%;-0%;0%
+		displayFolder: Prêmio
+		lineageTag: 5a000001-0000-4000-8000-000000000031
+
+	/// Eficiência a partir da qual o prêmio começa a ser pago.
+	measure 'Eficiencia Minima do Premio' =
+			CALCULATE (
+			    MIN ( dim_faixa_premio[eficiencia_min] ),
+			    FILTER ( ALL ( dim_faixa_premio ), dim_faixa_premio[pct_diaria_premio] > 0 )
+			)
+		formatString: 0%;-0%;0%
+		displayFolder: Prêmio
+		lineageTag: 5a000001-0000-4000-8000-000000000032
+
+	/// Faturamento que falta para o setor atingir a eficiência mínima do prêmio.
+	measure 'Falta para Entrar no Premio' =
+			MAX ( 0, [Eficiencia Minima do Premio] * [Meta do Ciclo] - [Faturamento Ciclo] )
+		formatString: "R$" #,0.00;-"R$" #,0.00;"R$" #,0.00
+		displayFolder: Prêmio
+		lineageTag: 5a000001-0000-4000-8000-000000000033
+
+	/// Quanto de faturamento vale 1 ponto percentual de eficiência na competência.
+	measure 'Valor de 1 Ponto' = DIVIDE ( [Meta do Ciclo], 100 )
+		formatString: "R$" #,0.00;-"R$" #,0.00;"R$" #,0.00
+		displayFolder: Prêmio
+		lineageTag: 5a000001-0000-4000-8000-000000000034
+
+	/// Valor do serviço das OPs que estão agora no setor (peças x valor do serviço).
+	measure 'Fila no Setor' = SUM ( fato_fila_op[valor_servico_restante] )
+		formatString: "R$" #,0.00;-"R$" #,0.00;"R$" #,0.00
+		displayFolder: Fila de OPs
+		lineageTag: 5a000001-0000-4000-8000-000000000035
+
+	measure 'OPs na Fila' = COUNTROWS ( fato_fila_op )
+		formatString: 0
+		displayFolder: Fila de OPs
+		lineageTag: 5a000001-0000-4000-8000-000000000036
+
+	/// Fila / falta para a meta. 100% ou mais = o setor tem trabalho suficiente; abaixo, falta OP programada (problema de PCP, não de produtividade).
+	measure 'Fila Cobre a Falta' = DIVIDE ( [Fila no Setor], [Falta para Meta] )
+		formatString: 0%;-0%;0%
+		displayFolder: Fila de OPs
+		lineageTag: 5a000001-0000-4000-8000-000000000037
+
+	/// OPs no setor sem movimentação há mais de 15 dias (possível OP esquecida ou travada).
+	measure 'OPs Paradas 15 Dias' =
+			CALCULATE (
+			    COUNTROWS ( fato_fila_op ),
+			    fato_fila_op[data_ultima_movimentacao] < [Data Referencia] - 15
+			)
+		formatString: 0
+		displayFolder: Fila de OPs
+		lineageTag: 5a000001-0000-4000-8000-000000000038
+
+	/// Valor por peça normal do setor (todas as famílias) nos últimos 90 dias.
+	measure 'Valor Medio por Peca Tipico' =
+			CALCULATE (
+			    [Valor Medio por Peca],
+			    REMOVEFILTERS ( dim_calendario ),
+			    REMOVEFILTERS ( dim_familia_produto ),
+			    dim_calendario[data] > [Data Referencia] - 90,
+			    dim_calendario[data] <= [Data Referencia]
+			)
+		formatString: "R$" #,0.00;-"R$" #,0.00;"R$" #,0.00
+		displayFolder: Mix de Produto
+		lineageTag: 5a000001-0000-4000-8000-000000000039
+
+	/// Valor por peça do período / valor típico (90 dias). Acima de 1x = peças mais trabalhosas que o normal.
+	measure 'Indice de Complexidade' = DIVIDE ( [Valor Medio por Peca], [Valor Medio por Peca Tipico] )
+		formatString: 0.00"x"
+		displayFolder: Mix de Produto
+		lineageTag: 5a000001-0000-4000-8000-000000000040
+
+	/// Participação da família de produto no faturamento do setor no período.
+	measure '% do Faturamento' =
+			DIVIDE ( [Faturamento Produzido], CALCULATE ( [Faturamento Produzido], REMOVEFILTERS ( dim_familia_produto ) ) )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Mix de Produto
+		lineageTag: 5a000001-0000-4000-8000-000000000041
+
+	/// Quantos pontos da eficiência do setor vieram de cada família (a soma das famílias = % Atingimento do setor).
+	measure 'Pontos de Eficiencia' = DIVIDE ( [Faturamento Produzido], [Meta Custo Periodo] )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Mix de Produto
+		lineageTag: 5a000001-0000-4000-8000-000000000042
+
+	/// Quantas famílias o setor trabalhou no período. Muitas no mesmo dia = mais troca de ferramenta/setup e menos eficiência.
+	measure 'Familias Distintas' = DISTINCTCOUNT ( fato_producao[cd_familia] )
+		formatString: 0
+		displayFolder: Mix de Produto
+		lineageTag: 5a000001-0000-4000-8000-000000000043
+
+	/// Eficiência ideal para hoje = dias úteis encerrados / dias úteis da competência. Usar em "Valor de destino" dos velocímetros.
+	measure 'Ideal Hoje' = DIVIDE ( [Dias Uteis Decorridos], [Dias Uteis Ciclo] )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Velocímetro
+		lineageTag: 5a000001-0000-4000-8000-000000000044
+
+	/// Cor do arco do velocímetro. Verde = no ideal ou acima; amarelo = até 20% abaixo; vermelho = mais de 20% abaixo.
+	measure 'Cor Velocimetro' =
+			VAR Atual = [% Atual do Ciclo]
+			VAR Ideal = [Ideal Hoje]
+			RETURN
+			    SWITCH (
+			        TRUE (),
+			        ISBLANK ( Atual ), "#9E9E9E",
+			        Atual >= Ideal, "#2E7D32",
+			        Atual >= Ideal * 0.8, "#F9A825",
+			        "#C62828"
+			    )
+		displayFolder: Velocímetro
+		lineageTag: 5a000001-0000-4000-8000-000000000045
+
+	column Coluna
+		isHidden
+		dataType: int64
+		summarizeBy: none
+		sourceColumn: Coluna
+		lineageTag: 5a000001-0000-4000-8000-000000000099
+
+	partition _Medidas = m
+		mode: import
+		source =
+				let
+				    Fonte = #table(type table [Coluna = Int64.Type], {})
+				in
+				    Fonte
+

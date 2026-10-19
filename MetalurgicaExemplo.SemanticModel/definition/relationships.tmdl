@@ -1,0 +1,27 @@
+relationship rel_producao_setor
+	fromColumn: fato_producao.cd_setor
+	toColumn: dim_setor.cd_setor
+
+relationship rel_producao_familia
+	fromColumn: fato_producao.cd_familia
+	toColumn: dim_familia_produto.cd_familia
+
+relationship rel_producao_calendario
+	fromColumn: fato_producao.data
+	toColumn: dim_calendario.data
+
+relationship rel_custo_setor
+	fromColumn: fato_custo_setor_dia.cd_setor
+	toColumn: dim_setor.cd_setor
+
+relationship rel_custo_calendario
+	fromColumn: fato_custo_setor_dia.data
+	toColumn: dim_calendario.data
+
+relationship rel_fila_setor
+	fromColumn: fato_fila_op.cd_setor
+	toColumn: dim_setor.cd_setor
+
+relationship rel_fila_familia
+	fromColumn: fato_fila_op.cd_familia
+	toColumn: dim_familia_produto.cd_familia
