@@ -68,6 +68,7 @@ Requisitos: **Power BI Desktop** com a prévia de *Power BI Project (.pbip)* e *
 ├── dados/                          CSVs sintéticos
 ├── docs/medidas.md                 dicionário das medidas DAX
 ├── scripts/gerar_dados.py          gerador dos dados (semente fixa)
+├── scripts/gerar_previa.py         gera a prévia ilustrativa (docs/previa-dashboard.png)
 ├── MetalurgicaExemplo.pbip
 ├── MetalurgicaExemplo.SemanticModel/   modelo em TMDL (tabelas, relacionamentos, medidas)
 └── MetalurgicaExemplo.Report/          relatório
@@ -75,11 +76,13 @@ Requisitos: **Power BI Desktop** com a prévia de *Power BI Project (.pbip)* e *
 
 ## Tecnologias
 
-Power BI · DAX · Power Query (M) · TMDL / PBIP · Python
+Power BI · DAX · Power Query (M) · TMDL / PBIP · Python (matplotlib na prévia)
 
-## Prints
+## Prévia
 
-_Em breve._
+![Prévia do acompanhamento da meta por setor](docs/previa-dashboard.png)
+
+> **Atenção:** esta imagem **não é uma captura do Power BI**. Ela foi desenhada em Python (`scripts/gerar_previa.py`) recalculando, com a mesma lógica das medidas DAX, os indicadores do acompanhamento da meta a partir dos dados sintéticos. Mostra o que o modelo responde. As capturas do relatório serão adicionadas quando os visuais forem publicados.
 
 ---
 
